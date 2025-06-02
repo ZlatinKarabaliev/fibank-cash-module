@@ -29,7 +29,6 @@ public class SecurityConfig {
                 )
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable);
-        System.out.println("filterChain");
         return http.build();
     }
 }
