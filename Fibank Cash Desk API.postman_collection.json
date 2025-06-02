@@ -1,0 +1,204 @@
+{
+	"info": {
+		"_postman_id": "ac131a95-f175-48d1-bd61-951ff2ddc160",
+		"name": "Fibank Cash Desk API",
+		"description": "Postman collection for testing Fibank Cash Desk API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Check Balance BGN Martina",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "FIB-X-AUTH",
+						"value": "{{api_key}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/cash/balance?cashierName=MARTINA&fromDate=2025-05-01&dateTo=2025-06-01&currency=BGN",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"cash",
+						"balance"
+					],
+					"query": [
+						{
+							"key": "cashierName",
+							"value": "MARTINA"
+						},
+						{
+							"key": "fromDate",
+							"value": "2025-05-01"
+						},
+						{
+							"key": "dateTo",
+							"value": "2025-06-01"
+						},
+						{
+							"key": "currency",
+							"value": "BGN"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Deposit EURO",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "FIB-X-AUTH",
+						"value": "{{api_key}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"cashierName\": \"MARTINA\",\n  \"currency\": \"BGN\",\n  \"operationType\": \"DEPOSIT\",\n  \"denominations\": [\n    { \"value\": 10, \"count\": 10 },\n    { \"value\": 50, \"count\": 10 }\n  ]\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/cash/operation",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"cash",
+						"operation"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Deposit BGN",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "FIB-X-AUTH",
+						"value": "{{api_key}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"cashierName\": \"MARTINA\",\n  \"currency\": \"BGN\",\n  \"operationType\": \"DEPOSIT\",\n  \"operationDate\":\"2025-05-01\",\n  \"denominations\": [\n    { \"value\": 10, \"quantity\": 10 },\n    { \"value\": 50, \"quantity\": 10 }\n  ]\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/cash/operation",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"cash",
+						"operation"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Withdraw EURO Martina",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "FIB-X-AUTH",
+						"value": "{{api_key}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"cashierName\": \"MARTINA\",\n  \"currency\": \"EUR\",\n  \"operationType\": \"WITHDRAWAL\",\n  \"operationDate\":\"2025-05-01\",\n  \"denominations\": [\n    { \"value\": 50, \"quantity\": 10 }\n  ]\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/cash/operation",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"cash",
+						"operation"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Check Balance By Period",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "FIB-X-AUTH",
+						"value": "{{api_key}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/cash/balance/total?fromDate=2025-05-01&toDate=2025-06-01",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"cash",
+						"balance",
+						"total"
+					],
+					"query": [
+						{
+							"key": "fromDate",
+							"value": "2025-05-01"
+						},
+						{
+							"key": "toDate",
+							"value": "2025-06-01"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
