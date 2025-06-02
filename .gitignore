@@ -1,0 +1,34 @@
+# Java / Maven
+target/
+*.log
+*.class
+*.jar
+*.war
+*.ear
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+out/
+
+# OS специфични
+.DS_Store
+Thumbs.db
+
+
+# Backup / temp
+*.swp
+*~
+*.bak
+
+# VS Code (ако си ползвал)
+.vscode/
+
+# Logs and history
+*.txt
+history_*.txt
+balances.txt
+
+# Optional: ако имаш dotenv
+.env
