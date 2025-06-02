@@ -50,7 +50,7 @@ public class CashBalanceController {
             @RequestParam(value = "dateTo", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo) {
 
         if (currency == null) {
-            return ResponseEntity.badRequest().body(null); // или ErrorResponse
+            return ResponseEntity.badRequest().body(null);
         }
         CurrencyBalanceDTO balance = cashBalanceService.getBalance(cashierName, currency, dateFrom, dateTo);
         logger.info("Returning balance for cashier={}, currency={}, total={}",

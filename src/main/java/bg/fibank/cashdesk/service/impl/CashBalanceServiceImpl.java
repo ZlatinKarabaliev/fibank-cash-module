@@ -56,64 +56,64 @@ public class CashBalanceServiceImpl implements CashBalanceService {
 
     @PostConstruct
     public void init() {
-        Map<String, Map<CurrencyType, CurrencyBalance>> loaded = cashBalanceStorage.loadBalances();
-        if (!loaded.isEmpty()) {
+        Map<String, Map<CurrencyType, CurrencyBalance>> loaded = null;
+
+        try {
+            loaded = cashBalanceStorage.loadBalances();
+            logger.info("Attempting to load cashiers from file...");
+        } catch (Exception e) {
+            logger.warn("Could not load balances from file: {}", e.getMessage());
+        }
+
+        if (loaded != null && !loaded.isEmpty()) {
             loaded.forEach((name, balances) -> {
-                Cashier c = new Cashier(name);
-                balances.forEach(c::updateBalance);
-                cashiers.put(name, c);
+                Cashier cashier = new Cashier(name);
+                balances.forEach(cashier::updateBalance);
+                cashiers.put(name, cashier);
             });
-            logger.info("Loaded cashiers and balances from file");
+            logger.info("Loaded {} cashiers from balance file.", cashiers.size());
         } else {
-            Cashier martina = new Cashier("MARTINA");
-            martina.updateBalance(CurrencyType.BGN,
-                    new CurrencyBalance(Map.of(
-                            BigDecimal.valueOf(50), 10,
-                            BigDecimal.valueOf(10), 50
-                    ), BigDecimal.valueOf(1000)));
+            logger.warn("Balance file missing or empty — initializing default cashiers.");
 
-            martina.updateBalance(CurrencyType.EUR,
-                    new CurrencyBalance(Map.of(
-                            BigDecimal.valueOf(100), 10,
-                            BigDecimal.valueOf(20), 50
-                    ), BigDecimal.valueOf(2000)));
+            List<Cashier> defaultCashiers = List.of(
+                    createDefaultCashier("MARTINA"),
+                    createDefaultCashier("PETER"),
+                    createDefaultCashier("LINDA")
+            );
 
-            Cashier peter = new Cashier("PETER");
-            peter.updateBalance(CurrencyType.BGN,
-                    new CurrencyBalance(Map.of(
-                            BigDecimal.valueOf(50), 10,
-                            BigDecimal.valueOf(10), 50
-                    ), BigDecimal.valueOf(1000)));
-            peter.updateBalance(CurrencyType.EUR,
-                    new CurrencyBalance(Map.of(
-                            BigDecimal.valueOf(100), 10,
-                            BigDecimal.valueOf(20), 50
-                    ), BigDecimal.valueOf(2000)));
-
-            Cashier linda = new Cashier("LINDA");
-            linda.updateBalance(CurrencyType.BGN,
-                    new CurrencyBalance(Map.of(
-                            BigDecimal.valueOf(50), 10,
-                            BigDecimal.valueOf(10), 50
-                    ), BigDecimal.valueOf(1000)));
-            linda.updateBalance(CurrencyType.EUR,
-                    new CurrencyBalance(Map.of(
-                            BigDecimal.valueOf(100), 10,
-                            BigDecimal.valueOf(20), 50
-                    ), BigDecimal.valueOf(2000)));
-
-            cashiers.put("MARTINA", martina);
-            cashiers.put("PETER", peter);
-            cashiers.put("LINDA", linda);
+            for (Cashier c : defaultCashiers) {
+                cashiers.put(c.getName(), c);
+            }
 
             persistBalances();
-            logger.info("Initialized cashiers with starting balances");
+            logger.info("Initialized default cashiers and saved to balance file.");
         }
     }
 
-    @Override
-    public CurrencyBalanceDTO getBalance(String cashierName, CurrencyType currency, LocalDate dateFrom, LocalDate dateTo) {
-        logger.info("Getting balance for cashier={}, currency={}, dateFrom={}, dateTo={}",
+    private Cashier createDefaultCashier(String name) {
+        Cashier cashier = new Cashier(name);
+
+        cashier.updateBalance(CurrencyType.BGN,
+                new CurrencyBalance(Map.of(
+                        BigDecimal.valueOf(50), 10,
+                        BigDecimal.valueOf(10), 50
+                ), BigDecimal.valueOf(1000)));
+
+        cashier.updateBalance(CurrencyType.EUR,
+                new CurrencyBalance(Map.of(
+                        BigDecimal.valueOf(100), 10,
+                        BigDecimal.valueOf(20), 50
+                ), BigDecimal.valueOf(2000)));
+
+        return cashier;
+    }
+    /**
+     * Returns the effective balance for a cashier in a given currency.
+     * If no date range is provided, the method returns the current in-memory balance.
+     * If a date range is provided, it calculates the balance based on historical operations.
+     */
+    private CurrencyBalanceDTO getEffectiveBalance(String cashierName, CurrencyType currency, LocalDate dateFrom, LocalDate dateTo) {
+        logger.info("Fetching effective balance for cashier={}, currency={}, fromDate={}, dateTo={}",
                 cashierName, currency, dateFrom, dateTo);
 
         Cashier cashier = cashiers.get(cashierName);
@@ -122,6 +122,21 @@ public class CashBalanceServiceImpl implements CashBalanceService {
             return emptyBalance(currency);
         }
 
+        // If no date filters are applied, return the current in-memory balance
+        if (dateFrom == null && dateTo == null) {
+            CurrencyBalance current = cashier.getBalances().get(currency);
+            if (current != null) {
+                List<DenominationDTO> denominations = current.getDenominations().entrySet().stream()
+                        .map(e -> new DenominationDTO(e.getKey(), e.getValue()))
+                        .collect(Collectors.toList());
+                return new CurrencyBalanceDTO(currency, current.getTotal(), denominations);
+            } else {
+                logger.warn("No current balance found for currency {} for cashier {}", currency, cashierName);
+                return emptyBalance(currency);
+            }
+        }
+
+        // If date filters are present, calculate balance from operation history
         List<CashOperation> filteredOps = operationHistory.stream()
                 .filter(op -> op.cashierName().equals(cashierName))
                 .filter(op -> op.currency() == currency)
@@ -137,8 +152,14 @@ public class CashBalanceServiceImpl implements CashBalanceService {
             return new CurrencyBalanceDTO(currency, balanceFromHistory.getTotal(), denominations);
         }
 
-        logger.warn("No operations found for given filters, returning empty balance");
+        logger.warn("No operations found for given period, returning empty balance");
         return emptyBalance(currency);
+    }
+
+
+    @Override
+    public CurrencyBalanceDTO getBalance(String cashierName, CurrencyType currency, LocalDate dateFrom, LocalDate dateTo) {
+        return getEffectiveBalance(cashierName, currency, dateFrom, dateTo);
     }
 
     private CurrencyBalance calculateBalanceFromOperations(List<CashOperation> operations) {
@@ -219,11 +240,6 @@ public class CashBalanceServiceImpl implements CashBalanceService {
         cashBalanceStorage.saveBalances(toSave);
     }
 
-    private BigDecimal calculateTotal(List<DenominationDTO> denominations) {
-        return denominations.stream()
-                .map(d -> d.value().multiply(BigDecimal.valueOf(d.quantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
 
     @Override
     public Set<CurrencyType> getSupportedCurrencies() {
